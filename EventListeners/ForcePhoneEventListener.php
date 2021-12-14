@@ -19,13 +19,13 @@ use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Validator\Constraints\NotBlank;
-use Thelia\Core\Event\Address\AddressEvent;
-use Thelia\Core\Event\Customer\CustomerEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Event\TheliaFormEvent;
 use Thelia\Core\HttpFoundation\Request;
 use Thelia\Core\Translation\Translator;
 use Thelia\Log\Tlog;
+use Thelia\Model\Event\AddressEvent;
+use Thelia\Model\Event\CustomerEvent;
 
 /**
  * Class ForcePhoneEventListener
@@ -55,10 +55,10 @@ class ForcePhoneEventListener implements EventSubscriberInterface
             TheliaEvents::FORM_AFTER_BUILD . '.thelia_customer_update'  => ['forcePhoneInput', 128],
             TheliaEvents::FORM_AFTER_BUILD . '.thelia_address_update'   => ['forcePhoneInput', 128],
             TheliaEvents::FORM_AFTER_BUILD . '.thelia_address_creation' => ['forcePhoneInput', 128],
-            TheliaEvents::AFTER_CREATECUSTOMER                          => ['customerPhoneUpdate', 125],
-            TheliaEvents::AFTER_UPDATECUSTOMER                          => ['customerPhoneUpdate', 125],
-            TheliaEvents::BEFORE_UPDATEADDRESS                          => ['addressPhoneUpdate', 125],
-            TheliaEvents::BEFORE_CREATEADDRESS                          => ['addressPhoneUpdate', 125],
+            CustomerEvent::POST_INSERT                                  => ['customerPhoneUpdate', 125],
+            CustomerEvent::POST_UPDATE                                  => ['customerPhoneUpdate', 125],
+            AddressEvent::PRE_UPDATE                                    => ['addressPhoneUpdate', 125],
+            AddressEvent::PRE_INSERT                                    => ['addressPhoneUpdate', 125],
         ];
     }
 
@@ -124,7 +124,7 @@ class ForcePhoneEventListener implements EventSubscriberInterface
         $validateFormat = ForcePhone::getConfigValue('validate_format', false);
 
         if ($this->request->fromApi() === false && $validateFormat) {
-            $address = $addressEvent->getAddress();
+            $address = $addressEvent->getModel();
 
             try {
                 $phoneUtil = PhoneNumberUtil::getInstance();
@@ -167,7 +167,7 @@ class ForcePhoneEventListener implements EventSubscriberInterface
         $validateFormat = ForcePhone::getConfigValue('validate_format', false);
 
         if ($this->request->fromApi() === false && $validateFormat) {
-            $address = $customerEvent->getCustomer()->getDefaultAddress();
+            $address = $customerEvent->getModel()->getDefaultAddress();
 
             try {
                 $phoneUtil = PhoneNumberUtil::getInstance();
